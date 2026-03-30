@@ -1,0 +1,30 @@
+#!/usr/bin/bash
+set -euo pipefail
+
+SMTP_AUTH_USER="${SMTP_AUTH_USER:-}"
+SMTP_AUTH_PASS="${SMTP_AUTH_PASS:-}"
+MAILNAME_VALUE="${MAILNAME:-}"
+
+if [[ -z "$SMTP_AUTH_USER" || -z "$SMTP_AUTH_PASS" ]]; then
+  echo "ERROR: SMTP_AUTH_USER/SMTP_AUTH_PASS must be set" >&2
+  exit 1
+fi
+
+# Ensure SASL group exists and postfix can read /etc/sasldb2
+if ! getent group sasl >/dev/null 2>&1; then
+  groupadd -r sasl
+fi
+
+if id postfix >/dev/null 2>&1; then
+  usermod -a -G sasl postfix || true
+fi
+
+# Create SASL user in sasldb. We create both without realm and (if MAILNAME is set) with realm,
+# to avoid realm-mismatch surprises for clients.
+echo "$SMTP_AUTH_PASS" | saslpasswd2 -p -c "$SMTP_AUTH_USER"
+if [[ -n "$MAILNAME_VALUE" ]]; then
+  echo "$SMTP_AUTH_PASS" | saslpasswd2 -p -c -u "$MAILNAME_VALUE" "$SMTP_AUTH_USER"
+fi
+
+chown root:sasl /etc/sasldb2
+chmod 640 /etc/sasldb2
