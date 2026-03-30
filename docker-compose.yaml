@@ -19,45 +19,12 @@ services:
 
       # SMTPS (implicit TLS) for ZITADEL SMTP AUTH. Traefik terminates TLS using Let's Encrypt
       # and forwards plain SMTP to Postfix inside the Docker network.
-      - "traefik.tcp.routers.zitadel-smtps.rule=HostSNI(`${ZITADEL_EXTERNALDOMAIN}`)"
-      - "traefik.tcp.routers.zitadel-smtps.entrypoints=smtps"
-      - "traefik.tcp.routers.zitadel-smtps.tls=true"
-      - "traefik.tcp.routers.zitadel-smtps.tls.certresolver=letsencrypt"
-      - "traefik.tcp.routers.zitadel-smtps.service=postfix-smtp"
-      - "traefik.tcp.services.postfix-smtp.loadbalancer.server.port=25"
     networks:
       - web
-  traefik:
-    image: traefik:v3.6.1
+  cloudflare:
     restart: unless-stopped
-    command:
-      - "--api=true"
-      - "--api.dashboard=true"
-      - "--log.level=INFO"
-      - "--accesslog=true"
-      - "--accesslog.format=common"
-      - "--providers.docker=true"
-      - "--providers.docker.exposedbydefault=false"
-      - "--providers.docker.network=web"
-      - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.smtps.address=:465"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge=true"
-      - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-      - "--certificatesresolvers.letsencrypt.acme.email=${LETSENCRYPT_EMAIL:-betrieb-ds@mds-it.de}"
-      - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - type: bind
-        source: /var/run/docker.sock
-        target: /var/run/docker.sock
-        read_only: true
-      - letsencrypt:/letsencrypt
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     networks:
       - web
 
@@ -124,9 +91,9 @@ services:
       # If you can't log in, check the available login names:
       # echo "select * from projections.login_names3;" | psql -h localhost -U postgres -d zitadel
       # The postgres users password is postgres.
-      ZITADEL_FIRSTINSTANCE_ORG_NAME: MDS GmbH
+      ZITADEL_FIRSTINSTANCE_ORG_NAME: ${ZITADEL_ORG_NAME:-my-organization}
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_USERNAME: root
-      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: RootPassword1!
+      ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: ${ZITADEL_ROOT_PASSWORD:-rootPassword123!}
 
       # Enable debug logs
       # ZITADEL_LOG_LEVEL: debug     
@@ -145,17 +112,17 @@ services:
     user: "0"
     volumes:
       - .:/current-dir:delegated
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=web"
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.docker.network=web"
 
-      # Zitadel API + Console
-      - "traefik.http.routers.zitadel.rule=Host(`${ZITADEL_EXTERNALDOMAIN}`)"
-      - "traefik.http.routers.zitadel.entrypoints=websecure"
-      - "traefik.http.routers.zitadel.tls=true"
-      - "traefik.http.routers.zitadel.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.zitadel.service=zitadel"
-      - "traefik.http.services.zitadel.loadbalancer.server.port=8080"
+    #   # Zitadel API + Console
+    #   - "traefik.http.routers.zitadel.rule=Host(`${ZITADEL_EXTERNALDOMAIN}`)"
+    #   - "traefik.http.routers.zitadel.entrypoints=websecure"
+    #   - "traefik.http.routers.zitadel.tls=true"
+    #   - "traefik.http.routers.zitadel.tls.certresolver=letsencrypt"
+    #   - "traefik.http.routers.zitadel.service=zitadel"
+    #   - "traefik.http.services.zitadel.loadbalancer.server.port=8080"
     networks:
       - zitadel
       - web
@@ -172,22 +139,24 @@ services:
       - NEXT_PUBLIC_BASE_PATH=/ui/v2/login
       - ZITADEL_SERVICE_USER_TOKEN_FILE=/current-dir/login-client.pat
       - CUSTOM_REQUEST_HEADERS=Host:${ZITADEL_EXTERNALDOMAIN}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=web"
-      - "traefik.http.routers.zitadel-login.rule=Host(`${ZITADEL_EXTERNALDOMAIN}`) && PathPrefix(`/ui/v2/login`)"
-      - "traefik.http.routers.zitadel-login.entrypoints=websecure"
-      - "traefik.http.routers.zitadel-login.tls=true"
-      - "traefik.http.routers.zitadel-login.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.zitadel-login.priority=100"
-      - "traefik.http.routers.zitadel-login.service=zitadel-login"
-      - "traefik.http.services.zitadel-login.loadbalancer.server.port=3000"
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.docker.network=web"
+    #   - "traefik.http.routers.zitadel-login.rule=Host(`${ZITADEL_EXTERNALDOMAIN}`) && PathPrefix(`/ui/v2/login`)"
+    #   - "traefik.http.routers.zitadel-login.entrypoints=websecure"
+    #   - "traefik.http.routers.zitadel-login.tls=true"
+    #   - "traefik.http.routers.zitadel-login.tls.certresolver=letsencrypt"
+    #   - "traefik.http.routers.zitadel-login.priority=100"
+    #   - "traefik.http.routers.zitadel-login.service=zitadel-login"
+    #   - "traefik.http.services.zitadel-login.loadbalancer.server.port=3000"
     user: "0"
     volumes:
       - .:/current-dir:ro
     networks:
-      - zitadel
-      - web
+      zitadel:
+      web:
+        aliases:
+          - zitadel-login
     depends_on:
       zitadel:
         condition: service_healthy
