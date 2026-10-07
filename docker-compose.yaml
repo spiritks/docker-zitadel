@@ -1,26 +1,4 @@
 services:
-  postfix:
-    restart: unless-stopped
-    build:
-      context: ./postfix
-    image: docker-zitadel/postfix-auth:local
-    environment:
-      - MAILNAME=${ZITADEL_EXTERNALDOMAIN}
-      - MY_NETWORKS=127.0.0.0/8 [::1]/128
-      - SMTP_AUTH_USER=${POSTFIX_SMTP_USER}
-      - SMTP_AUTH_PASS=${POSTFIX_SMTP_PASS}
-      # - MAIL_RELAY_HOST=smtp-relay.sendinblue.com
-      # - MAIL_RELAY_PORT=587
-      # - MAIL_RELAY_USERNAME=${SENDINBLUE_USERNAME}
-      # - MAIL_RELAY_PASSWORD=${SENDINBLUE_PASSWORD}
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=web"
-
-      # SMTPS (implicit TLS) for ZITADEL SMTP AUTH. Traefik terminates TLS using Let's Encrypt
-      # and forwards plain SMTP to Postfix inside the Docker network.
-    networks:
-      - web
   cloudflare:
     restart: unless-stopped
     image: cloudflare/cloudflared:latest
@@ -96,9 +74,9 @@ services:
       ZITADEL_FIRSTINSTANCE_ORG_HUMAN_PASSWORD: ${ZITADEL_ROOT_PASSWORD:-rootPassword123!}
 
       # Enable debug logs
-      # ZITADEL_LOG_LEVEL: debug     
+      ZITADEL_LOG_LEVEL: debug     
       # Write Access Logs to stdout.
-      # ZITADEL_LOGSTORE_ACCESS_STDOUT_ENABLED: true
+      ZITADEL_LOGSTORE_ACCESS_STDOUT_ENABLED: true
 
     healthcheck:
       test:
@@ -112,6 +90,8 @@ services:
     user: "0"
     volumes:
       - .:/current-dir:delegated
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     # labels:
     #   - "traefik.enable=true"
     #   - "traefik.docker.network=web"
@@ -152,6 +132,8 @@ services:
     user: "0"
     volumes:
       - .:/current-dir:ro
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
     networks:
       zitadel:
       web:

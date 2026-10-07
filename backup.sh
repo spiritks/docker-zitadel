@@ -11,7 +11,7 @@ TIMESTAMP="$(date +%F-%H%M%S)"
 BACKUP_DIR="${BACKUP_DIR:-$PROJECT_DIR/backup-$TIMESTAMP}"
 
 REQUIRED_FILES=("docker-compose.yaml" ".env")
-OPTIONAL_PATHS=("postfix" "login-client.pat")
+OPTIONAL_PATHS=("login-client.pat")
 
 log() {
   printf '[backup] %s\n' "$*"

@@ -6,7 +6,6 @@ This stack stores persistent state in two Docker volumes and a few local files:
 - `docker-zitadel_letsencrypt` — Traefik ACME certificates
 - `.env` — all secrets and domain settings
 - `docker-compose.yaml` — stack definition
-- `postfix/` — local Postfix image and config
 - `login-client.pat` — generated login PAT (optional, but useful to keep)
 
 ## Ready-made scripts
@@ -50,7 +49,6 @@ mkdir -p "$BACKUP_DIR"
 tar czf "$BACKUP_DIR/stack-files.tar.gz" \
   docker-compose.yaml \
   .env \
-  postfix \
   login-client.pat
 ```
 

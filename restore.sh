@@ -93,7 +93,7 @@ main() {
   fi
 
   if [[ "$FORCE" != "1" ]]; then
-    for path in docker-compose.yaml .env postfix login-client.pat; do
+    for path in docker-compose.yaml .env login-client.pat; do
       if [[ -e "$PROJECT_DIR/$path" ]]; then
         fail "Path already exists: $path (set FORCE=1 to overwrite local files and recreate volumes)"
       fi
